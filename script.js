@@ -6,7 +6,7 @@ let balancePersonal = 0;
 
 // --- CONFIGURAÇÃO GOOGLE SHEETS ---
 // IMPORTANTE: Substitua pela URL do seu App Script
-const GOOGLE_SHEET_URL = "COLE_SUA_URL_AQUI"; 
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzW-kPYS2xDqSyEjE04iwL_FXR_ZaRqKeXdw5XadLH47QobjHHNbI-biORVsgNBHVaIxg/exec"; 
 
 // Instâncias dos gráficos
 let pieChartInstance = null;
@@ -530,3 +530,4 @@ function clearAllData() {
         location.reload();
     }
 }
+
