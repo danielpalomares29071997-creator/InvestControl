@@ -5,8 +5,8 @@ let balanceReinvest = 0;
 let balancePersonal = 0;
 
 // --- CONFIGURAÇÃO GOOGLE SHEETS ---
-// IMPORTANTE: Substitua pela URL do seu App Script (Nova Versão)
-const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzW-kPYS2xDqSyEjE04iwL_FXR_ZaRqKeXdw5XadLH47QobjHHNbI-biORVsgNBHVaIxg/exec"; 
+// IMPORTANTE: Substitua pela URL do seu App Script
+const GOOGLE_SHEET_URL = "COLE_SUA_URL_AQUI"; 
 
 // Instâncias dos gráficos
 let pieChartInstance = null;
@@ -37,7 +37,10 @@ function showPage(pageId, element) {
         element.classList.add('active');
     }
     document.getElementById(pageId).classList.add('active-section');
-    renderAll();
+    
+    // Atualiza gráficos específicos ao entrar na aba
+    if(pageId === 'dashboard') updateDashboard();
+    if(pageId === 'evolucao') updateEvolutionChart();
 }
 
 function checkPasswordAndShowConfig(element) {
@@ -53,7 +56,6 @@ function goToAportes() {
 
 // --- LÓGICA DE SALDOS ---
 function recalculateBalances() {
-    // Zera e recalcula tudo baseado no histórico
     balanceReinvest = 0;
     balancePersonal = 0;
 
@@ -86,7 +88,7 @@ function handleTransaction(type, walletType) {
     }
 
     const newTrans = {
-        dataType: 'transaction', // Flag para o Google Sheets saber onde salvar
+        dataType: 'transaction',
         id: Date.now(),
         date: new Date().toLocaleDateString('pt-BR'),
         type: type,
@@ -95,13 +97,10 @@ function handleTransaction(type, walletType) {
         value: value
     };
 
-    // Atualiza Local
     transactions.unshift(newTrans);
     recalculateBalances();
     saveLocal();
     renderAll();
-
-    // Envia para Nuvem
     sendToSheet(newTrans);
 }
 
@@ -117,9 +116,8 @@ if(form) {
             return;
         }
 
-        // 1. Cria o Investimento
         const newInvest = {
-            dataType: 'investment', // Flag para Sheets
+            dataType: 'investment',
             id: Date.now(),
             name: document.getElementById('inpName').value,
             institution: document.getElementById('inpInst').value,
@@ -134,10 +132,9 @@ if(form) {
             status: document.getElementById('inpStatus').value
         };
 
-        // 2. Cria a Transação de Saída do Giro (Pagamento do aporte)
         const paymentTrans = {
             dataType: 'transaction',
-            id: Date.now() + 1, // ID ligeiramente diferente
+            id: Date.now() + 1,
             date: new Date().toLocaleDateString('pt-BR'),
             type: 'withdraw',
             wallet: 'reinvest',
@@ -145,7 +142,6 @@ if(form) {
             value: value
         };
 
-        // Atualiza Local
         investments.push(newInvest);
         transactions.unshift(paymentTrans);
         recalculateBalances();
@@ -153,9 +149,7 @@ if(form) {
         
         document.getElementById('investForm').reset();
         
-        // Envia AMBOS para a nuvem
         sendToSheet(newInvest);
-        // Pequeno delay para não sobrecarregar
         setTimeout(() => sendToSheet(paymentTrans), 1000); 
 
         alert('Registrado com sucesso!');
@@ -164,7 +158,6 @@ if(form) {
     });
 }
 
-// --- RESGATE / TRANSFERÊNCIA ---
 function openTransferModal(id) {
     const inv = investments.find(i => i.id === id);
     if(!inv) return;
@@ -180,11 +173,9 @@ function openTransferModal(id) {
     
     if(!targetWallet) return;
 
-    // Atualiza Investimento (Local)
     inv.value -= amount;
     if(inv.value <= 0.01) inv.status = "Finalizado";
 
-    // Cria Transação de Entrada (Local)
     const incomeTrans = {
         dataType: 'transaction',
         id: Date.now(),
@@ -199,10 +190,6 @@ function openTransferModal(id) {
     recalculateBalances();
     saveLocal();
     renderAll();
-
-    // Na nuvem, é complexo atualizar o valor do investimento existente.
-    // Para simplificar, enviamos apenas a transação de entrada do dinheiro.
-    // O valor do investimento ficará desatualizado na planilha até a próxima sincronização completa ou edição manual.
     sendToSheet(incomeTrans); 
     alert("Resgate realizado! (O saldo do ativo será atualizado na planilha na próxima recarga completa).");
 }
@@ -243,15 +230,16 @@ function loadFromSheet() {
     fetch(GOOGLE_SHEET_URL)
     .then(res => res.json())
     .then(data => {
-        // A API agora retorna { investments: [], transactions: [] }
         if(data.investments && data.transactions) {
             investments = data.investments;
             transactions = data.transactions;
-            
             recalculateBalances();
             saveLocal();
             renderAll();
-            console.log("Sincronização completa!");
+            // Se estiver na tela de evolução, atualiza o gráfico com os dados novos
+            if(document.getElementById('evolucao').classList.contains('active-section')) {
+                updateEvolutionChart();
+            }
         }
     })
     .catch(err => console.error("Erro sync:", err))
@@ -271,29 +259,24 @@ function formatCurrency(val) {
 function renderAll() {
     renderWallets();
     renderInvestments();
-    updateDashboard(); // Atualiza KPIs e Gráficos
-}
-
-function clearAllData() {
-    if(confirm("Limpar dados locais?")) {
-        localStorage.clear();
-        location.reload();
+    updateDashboard();
+    // A evolução é pesada para renderizar sempre, então só chamamos se a aba estiver ativa
+    if(document.getElementById('evolucao').classList.contains('active-section')) {
+        updateEvolutionChart();
     }
 }
 
 // --- RENDERIZAÇÃO (UI) ---
 function renderWallets() {
-    // Atualiza KPIs
     document.getElementById('balanceReinvest').innerText = formatCurrency(balanceReinvest);
     document.getElementById('dashBalanceReinvest').innerText = formatCurrency(balanceReinvest);
     document.getElementById('balancePersonal').innerText = formatCurrency(balancePersonal);
     document.getElementById('dashBalancePersonal').innerText = formatCurrency(balancePersonal);
 
-    // Tabelas
     const tbodyGiro = document.getElementById('tableBodyReinvest');
     const tbodyPersonal = document.getElementById('tableBodyPersonal');
-    tbodyGiro.innerHTML = ''; 
-    tbodyPersonal.innerHTML = '';
+    if(tbodyGiro) tbodyGiro.innerHTML = ''; 
+    if(tbodyPersonal) tbodyPersonal.innerHTML = '';
 
     transactions.forEach(t => {
         const isGiro = t.wallet === 'reinvest';
@@ -309,22 +292,27 @@ function renderWallets() {
                 <td><button class="btn-icon delete" onclick="deleteTransaction(${t.id})"><span class="material-icons-outlined">delete</span></button></td>
             </tr>`;
         
-        if (isGiro) tbodyGiro.innerHTML += html;
-        else tbodyPersonal.innerHTML += html;
+        if(isGiro && tbodyGiro) tbodyGiro.innerHTML += html;
+        else if(!isGiro && tbodyPersonal) tbodyPersonal.innerHTML += html;
     });
 }
 
 function renderInvestments() {
     const tbody = document.getElementById('investTableBody');
+    if(!tbody) return;
     tbody.innerHTML = '';
     investments.forEach(inv => {
-        const dateParts = inv.date.split('-'); // YYYY-MM-DD
-        const dateFmt = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : inv.date;
+        // Correção de data caso venha ISO da planilha ou YYYY-MM-DD
+        let dateFmt = inv.date;
+        if(inv.date && inv.date.includes('-') && inv.date.length === 10) {
+            const parts = inv.date.split('-');
+            dateFmt = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
         
         let expiryFmt = '-';
-        if(inv.expiry) {
-             const expParts = inv.expiry.split('-');
-             expiryFmt = expParts.length === 3 ? `${expParts[2]}/${expParts[1]}/${expParts[0]}` : inv.expiry;
+        if(inv.expiry && inv.expiry.includes('-') && inv.expiry.length === 10) {
+             const parts = inv.expiry.split('-');
+             expiryFmt = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
         tbody.innerHTML += `
@@ -352,9 +340,13 @@ function updateDashboard() {
     
     if(activeInv.length > 0) {
         const next = activeInv[0];
-        const expParts = next.expiry.split('-');
-        if(expParts.length === 3) document.getElementById('dashNextExpiry').innerText = `${expParts[2]}/${expParts[1]}`;
-        else document.getElementById('dashNextExpiry').innerText = next.expiry;
+        // Tratamento seguro de data
+        let displayDate = next.expiry;
+        if(next.expiry && next.expiry.includes('-')) {
+             const p = next.expiry.split('-');
+             displayDate = `${p[2]}/${p[1]}`;
+        }
+        document.getElementById('dashNextExpiry').innerText = displayDate;
         document.getElementById('dashNextExpiryName').innerText = next.name;
     } else {
         document.getElementById('dashNextExpiry').innerText = '--/--';
@@ -398,9 +390,143 @@ function updateCharts() {
         }
     });
 }
+
+// --- LÓGICA DE EVOLUÇÃO (RESTAURADA) ---
 function updateEvolutionChart() {
     const ctx = document.getElementById('evolutionChart');
-    if(!ctx) return;
-    // Lógica simplificada de evolução para manter o código limpo no exemplo
-    // (A lógica completa de projeção está no código original, pode ser mantida aqui se desejar)
+    const tableBody = document.querySelector('#evolutionTable tbody');
+    if(!ctx || !tableBody) return;
+    
+    tableBody.innerHTML = '';
+    
+    // 1. Pegar Filtros
+    const typeFilter = document.getElementById('filterType').value;
+    const instFilter = document.getElementById('filterInst').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const periodFilter = document.getElementById('filterPeriod').value;
+
+    // 2. Filtrar Investimentos
+    const filteredInvestments = investments.filter(inv => {
+        if (typeFilter !== 'all' && inv.type !== typeFilter) return false;
+        if (instFilter !== 'all' && inv.institution !== instFilter) return false;
+        if (statusFilter !== 'all' && inv.status !== statusFilter) return false;
+        return true;
+    });
+
+    // 3. Preparar Eixo de Tempo
+    const labels = [];
+    const dataPoints = [];
+    let startDate = new Date();
+    
+    if (periodFilter === 'all') {
+        if(filteredInvestments.length > 0) {
+            // Encontra a data mais antiga com segurança
+            const dates = filteredInvestments.map(i => {
+                const p = i.date.split('-');
+                return new Date(p[0], p[1]-1, p[2]).getTime();
+            });
+            const minDate = new Date(Math.min(...dates));
+            startDate = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+        } else {
+            startDate.setMonth(startDate.getMonth() - 12);
+        }
+    } else {
+        startDate.setMonth(startDate.getMonth() - parseInt(periodFilter));
+    }
+
+    const monthsToProject = periodFilter === 'all' ? 24 : parseInt(periodFilter) + 6;
+    let previousValue = 0;
+
+    for (let i = 0; i < monthsToProject; i++) {
+        const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+        const labelDate = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+        labels.push(labelDate);
+        
+        let totalValueInMonth = 0;
+
+        filteredInvestments.forEach(inv => {
+            // Conversão segura de data (YYYY-MM-DD para Date)
+            const p = inv.date.split('-');
+            const invStart = new Date(p[0], p[1]-1, p[2]);
+            
+            if (d >= invStart) {
+                const diffTime = Math.abs(d - invStart);
+                const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30.44); 
+                
+                let rateYearly = 0.10; // Default 10%
+                if (inv.ratePrev) {
+                    const rateVal = parseFloat(inv.ratePrev);
+                    // Lógica de Taxas
+                    if (inv.rateTypePrev && inv.rateTypePrev.includes('CDI')) {
+                        rateYearly = (rateVal / 100) * 0.11; // CDI = 11%
+                    } else if (inv.rateTypePrev && inv.rateTypePrev.includes('a.a.')) {
+                        rateYearly = rateVal / 100;
+                    } else if (inv.rateTypePrev && inv.rateTypePrev.includes('IPCA')) {
+                        rateYearly = 0.05 + (rateVal / 100); // IPCA = 5% + taxa
+                    }
+                }
+
+                const rateMonthly = Math.pow(1 + rateYearly, 1/12) - 1;
+                const projectedVal = inv.value * Math.pow(1 + rateMonthly, diffMonths);
+                
+                // Se finalizado, não deveria projetar eternamente, mas para este visualizador simples, mantemos a curva
+                totalValueInMonth += projectedVal;
+            }
+        });
+
+        dataPoints.push(totalValueInMonth);
+
+        // Preencher Tabela
+        const growth = totalValueInMonth - previousValue;
+        const growthStr = i === 0 ? '-' : (growth >= 0 ? '+' : '') + formatCurrency(growth);
+        const styleGrowth = growth >= 0 ? 'color: var(--accent-green)' : 'color: var(--accent-red)';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${labelDate}</td>
+            <td style="font-weight:bold;">${formatCurrency(totalValueInMonth)}</td>
+            <td style="${styleGrowth}">${growthStr}</td>
+        `;
+        tableBody.appendChild(tr);
+
+        previousValue = totalValueInMonth;
+    }
+
+    // Renderizar Gráfico
+    if (evolutionChartInstance) evolutionChartInstance.destroy();
+
+    evolutionChartInstance = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Evolução Patrimonial (Estimada)',
+                data: dataPoints,
+                borderColor: '#00b894',
+                backgroundColor: 'rgba(0, 184, 148, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#fff' } },
+                tooltip: { callbacks: { label: function(context) { return formatCurrency(context.raw); } } }
+            },
+            scales: {
+                y: { ticks: { color: '#94a3b8', callback: (val) => 'R$ ' + val }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { display: false } }
+            }
+        }
+    });
+}
+
+function clearAllData() {
+    if(confirm("ATENÇÃO: Isso apagará TODOS os dados locais. Deseja continuar?")) {
+        localStorage.clear();
+        location.reload();
+    }
 }
