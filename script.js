@@ -147,7 +147,7 @@ if(form) {
             status: document.getElementById('inpStatus').value
         };
 
-        // --- INTEGRAÇÃO GOOGLE SHEETS ---
+        // --- INTEGRAÇÃO GOOGLE SHEETS (POST) ---
         if (GOOGLE_SHEET_URL && GOOGLE_SHEET_URL !== "COLE_SUA_URL_AQUI") {
             const btnSubmit = document.querySelector('#investForm button[type="submit"]');
             const originalText = btnSubmit.innerText;
@@ -165,7 +165,6 @@ if(form) {
             })
             .then(() => {
                 console.log("Enviado para planilha!");
-                // Não bloqueamos o fluxo se der certo, o alert final avisa
             })
             .catch(err => {
                 console.error("Erro ao enviar para planilha", err);
@@ -193,11 +192,11 @@ if(form) {
         document.getElementById('investForm').reset();
         
         saveData();
-        // Pequeno delay para dar a sensação de processamento se estiver enviando
+        // Pequeno delay para dar a sensação de processamento
         setTimeout(() => {
             alert('Investimento registrado com sucesso!');
             renderInvestments();
-            renderWallets(); // Atualiza tabelas de carteira
+            renderWallets();
             goToAportes();
         }, 500);
     });
@@ -211,6 +210,42 @@ function deleteInvestment(id) {
     renderInvestments();
     updateDashboard();
 }
+
+// --- FUNÇÃO DE SINCRONIZAÇÃO (GET) ---
+function loadFromSheet() {
+    // Só executa se tiver URL configurada
+    if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === "COLE_SUA_URL_AQUI") return;
+
+    console.log("Iniciando sincronização com planilha...");
+    const tableContainer = document.querySelector('#investTableBody') ? document.querySelector('#investTableBody').parentElement : null;
+    if(tableContainer) tableContainer.style.opacity = '0.5';
+
+    fetch(GOOGLE_SHEET_URL)
+    .then(response => response.json())
+    .then(data => {
+        if(Array.isArray(data) && data.length > 0) {
+            console.log("Dados recebidos da nuvem:", data.length);
+            
+            // Atualiza a memória local com o que veio da planilha (Fonte da Verdade)
+            investments = data;
+            
+            // Salva e atualiza a tela
+            saveData();
+            renderInvestments();
+            updateDashboard();
+            
+            // Feedback discreto no console (para não incomodar com alert toda vez que abre)
+            console.log("Sincronização concluída com sucesso.");
+        }
+    })
+    .catch(error => {
+        console.error("Erro ao sincronizar com planilha:", error);
+    })
+    .finally(() => {
+        if(tableContainer) tableContainer.style.opacity = '1';
+    });
+}
+
 
 // --- LÓGICA DE TRANSFERÊNCIA / RESGATE INTELIGENTE ---
 function openTransferModal(id) {
@@ -543,5 +578,5 @@ window.onload = function() {
     renderWallets();
     renderInvestments();
     updateDashboard();
+    loadFromSheet(); // Busca dados ao abrir o site
 };
-
