@@ -267,4 +267,29 @@ tr:hover td { background-color: rgba(255,255,255,0.02); }
     .sidebar { width: 100%; padding: 15px; }
     .form-grid { grid-template-columns: 1fr; }
     .main-content { overflow: visible; }
+
+}/* Estilos de Paginação */
+.pagination-controls button {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.pagination-controls button:hover {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+/* Ajuste no input month */
+input[type="month"] {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: white;
+    outline: none;
 }
