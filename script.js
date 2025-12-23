@@ -6,6 +6,10 @@ let transactions = JSON.parse(localStorage.getItem('transactions')) || []; // Un
 let balanceReinvest = parseFloat(localStorage.getItem('balanceReinvest')) || 0; // Giro
 let balancePersonal = parseFloat(localStorage.getItem('balancePersonal')) || 0; // Pessoal
 
+// --- CONFIGURAÇÃO GOOGLE SHEETS ---
+// IMPORTANTE: Substitua o texto abaixo pelo link do seu App Script (mantenha as aspas)
+const GOOGLE_SHEET_URL = "COLE_SUA_URL_AQUI"; 
+
 // Instâncias dos gráficos
 let pieChartInstance = null;
 let barChartInstance = null;
@@ -37,9 +41,7 @@ function checkPasswordAndShowConfig(element) {
 
 function goToAportes() {
     // Seleciona o item de menu correspondente (Aportes é o 5º item se contarmos categorias)
-    // Simplificando: vamos buscar pelo texto ou índice
     const menuItems = document.querySelectorAll('.menu-item');
-    // Aportes é o item de índice 4 na lista de .menu-item (0, 1, 2, 3, 4...)
     if(menuItems[4]) showPage('aportes', menuItems[4]); 
 }
 
@@ -145,6 +147,37 @@ if(form) {
             status: document.getElementById('inpStatus').value
         };
 
+        // --- INTEGRAÇÃO GOOGLE SHEETS ---
+        if (GOOGLE_SHEET_URL && GOOGLE_SHEET_URL !== "COLE_SUA_URL_AQUI") {
+            const btnSubmit = document.querySelector('#investForm button[type="submit"]');
+            const originalText = btnSubmit.innerText;
+            btnSubmit.innerText = "Salvando na Nuvem...";
+            btnSubmit.disabled = true;
+            btnSubmit.style.opacity = "0.7";
+
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newInvest)
+            })
+            .then(() => {
+                console.log("Enviado para planilha!");
+                // Não bloqueamos o fluxo se der certo, o alert final avisa
+            })
+            .catch(err => {
+                console.error("Erro ao enviar para planilha", err);
+                alert('Aviso: Salvo localmente, mas houve erro ao enviar para a planilha.');
+            })
+            .finally(() => {
+                btnSubmit.innerText = originalText;
+                btnSubmit.disabled = false;
+                btnSubmit.style.opacity = "1";
+            });
+        }
+
         // Debita do Giro e registra transação de saída
         balanceReinvest -= value;
         transactions.unshift({
@@ -160,10 +193,13 @@ if(form) {
         document.getElementById('investForm').reset();
         
         saveData();
-        alert('Investimento registrado com sucesso!');
-        renderInvestments();
-        renderWallets(); // Atualiza tabelas de carteira
-        goToAportes();
+        // Pequeno delay para dar a sensação de processamento se estiver enviando
+        setTimeout(() => {
+            alert('Investimento registrado com sucesso!');
+            renderInvestments();
+            renderWallets(); // Atualiza tabelas de carteira
+            goToAportes();
+        }, 500);
     });
 }
 
