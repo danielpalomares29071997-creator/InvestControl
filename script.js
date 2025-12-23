@@ -8,7 +8,7 @@ let balancePersonal = parseFloat(localStorage.getItem('balancePersonal')) || 0; 
 
 // --- CONFIGURAÇÃO GOOGLE SHEETS ---
 // IMPORTANTE: Substitua o texto abaixo pelo link do seu App Script (mantenha as aspas)
-const GOOGLE_SHEET_URL = "COLE_SUA_URL_AQUI"; 
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzW-kPYS2xDqSyEjE04iwL_FXR_ZaRqKeXdw5XadLH47QobjHHNbI-biORVsgNBHVaIxg/exec"; 
 
 // Instâncias dos gráficos
 let pieChartInstance = null;
@@ -544,3 +544,4 @@ window.onload = function() {
     renderInvestments();
     updateDashboard();
 };
+
