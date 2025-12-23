@@ -4,19 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Investimentos Pro</title>
-    
-    <!-- Ícones Google Material -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
-    
-    <!-- Link para o CSS Externo -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Biblioteca de Gráficos (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-    <!-- BARRA LATERAL -->
     <nav class="sidebar">
         <div class="brand">
             <span class="material-icons-outlined">insights</span>
@@ -31,6 +24,10 @@
             <a class="menu-item" onclick="showPage('evolucao', this)">
                 <span class="material-icons-outlined">trending_up</span> Evolução
             </a>
+            <!-- NOVO MENU -->
+            <a class="menu-item" onclick="showPage('comparativo', this)">
+                <span class="material-icons-outlined">pie_chart</span> Comparativo (Meta)
+            </a>
 
             <div class="menu-category">Operacional</div>
             <a class="menu-item" onclick="showPage('carteira_giro', this)">
@@ -41,6 +38,10 @@
             </a>
             <a class="menu-item" onclick="showPage('aportes', this)">
                 <span class="material-icons-outlined">add_circle</span> Novos Aportes
+            </a>
+            <!-- NOVO MENU -->
+            <a class="menu-item" onclick="showPage('planejamento', this)">
+                <span class="material-icons-outlined">edit_calendar</span> Planejamento Anual
             </a>
             <a class="menu-item" onclick="showPage('historico', this)">
                 <span class="material-icons-outlined">history</span> Histórico
@@ -54,10 +55,9 @@
         </div>
     </nav>
 
-    <!-- CONTEÚDO PRINCIPAL -->
     <main class="main-content">
 
-        <!-- PÁGINA 1: DASHBOARD -->
+        <!-- DASHBOARD GERAL -->
         <section id="dashboard" class="page-section active-section">
             <div class="page-header">
                 <div class="page-title">
@@ -66,8 +66,6 @@
                 </div>
                 <button class="btn btn-primary" onclick="goToAportes()">+ Novo Aporte</button>
             </div>
-
-            <!-- KPIs -->
             <div class="kpi-grid">
                 <div class="card">
                     <div class="kpi-label">Patrimônio Investido</div>
@@ -75,14 +73,12 @@
                     <small class="text-green">Total acumulado</small>
                 </div>
                 <div class="card">
-                    <div class="kpi-label">Disponível p/ Giro (Reinvestir)</div>
+                    <div class="kpi-label">Disponível p/ Giro</div>
                     <div class="kpi-value text-blue" id="dashBalanceReinvest">R$ 0,00</div>
-                    <small>Em caixa para novos aportes</small>
                 </div>
                 <div class="card">
-                    <div class="kpi-label">Carteira Pessoal (Retirado)</div>
+                    <div class="kpi-label">Retirado (Pessoal)</div>
                     <div class="kpi-value text-yellow" id="dashBalancePersonal">R$ 0,00</div>
-                    <small>Valores resgatados</small>
                 </div>
                 <div class="card">
                     <div class="kpi-label">Próx. Vencimento</div>
@@ -90,38 +86,40 @@
                     <small class="text-secondary" id="dashNextExpiryName">-</small>
                 </div>
             </div>
-
-            <!-- Gráficos -->
             <div class="charts-row">
                 <div class="card">
                     <div class="kpi-label" style="margin-bottom: 20px;">Alocação de Ativos</div>
-                    <div class="chart-container">
-                        <canvas id="pieChart"></canvas>
-                    </div>
+                    <div class="chart-container"><canvas id="pieChart"></canvas></div>
                 </div>
                 <div class="card">
                     <div class="kpi-label" style="margin-bottom: 20px;">Distribuição (Valores)</div>
-                    <div class="chart-container">
-                        <canvas id="barChart"></canvas>
-                    </div>
+                    <div class="chart-container"><canvas id="barChart"></canvas></div>
                 </div>
             </div>
         </section>
 
-        <!-- PÁGINA: EVOLUÇÃO (DASHBOARD INTERATIVA) -->
+        <!-- EVOLUÇÃO (Com novos filtros e paginação) -->
         <section id="evolucao" class="page-section">
             <div class="page-header">
                 <div class="page-title">
                     <h2>Evolução Patrimonial</h2>
-                    <p>Acompanhe o crescimento dos seus juros compostos</p>
+                    <p>Acompanhe o crescimento no período selecionado</p>
                 </div>
             </div>
 
-            <!-- Filtros Interativos -->
+            <!-- Filtros Alterados -->
             <div class="card" style="margin-bottom: 30px;">
                 <div class="filters-bar">
                     <div class="filter-item">
-                        <label>Tipo de Investimento</label>
+                        <label>De (Data Inicial)</label>
+                        <input type="date" id="filterStartDate" class="form-control" onchange="updateEvolutionChart()">
+                    </div>
+                    <div class="filter-item">
+                        <label>Até (Data Final)</label>
+                        <input type="date" id="filterEndDate" class="form-control" onchange="updateEvolutionChart()">
+                    </div>
+                    <div class="filter-item">
+                        <label>Tipo</label>
                         <select id="filterType" class="form-control" onchange="updateEvolutionChart()">
                             <option value="all">Todos</option>
                             <option>Renda Fixa</option>
@@ -130,320 +128,203 @@
                             <option>Cripto</option>
                         </select>
                     </div>
-                    <div class="filter-item">
-                        <label>Instituição</label>
-                        <select id="filterInst" class="form-control" onchange="updateEvolutionChart()">
-                            <option value="all">Todas</option>
-                            <option>XP Investimentos</option>
-                            <option>BTG Pactual</option>
-                            <option>NuInvest</option>
-                            <option>Banco Inter</option>
-                        </select>
-                    </div>
-                    <div class="filter-item">
-                        <label>Status</label>
-                        <select id="filterStatus" class="form-control" onchange="updateEvolutionChart()">
-                            <option value="all">Todos</option>
-                            <option value="Ativo" selected>Ativos (Em carteira)</option>
-                            <option value="Finalizado">Finalizados</option>
-                        </select>
-                    </div>
-                      <div class="filter-item">
-                        <label>Período de Visualização</label>
-                        <select id="filterPeriod" class="form-control" onchange="updateEvolutionChart()">
-                            <option value="6">Últimos 6 Meses + Futuro</option>
-                            <option value="12" selected>Últimos 12 Meses + Futuro</option>
-                            <option value="all">Desde o Início</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
-            <!-- Gráfico de Linha (Evolução) -->
             <div class="card" style="margin-bottom: 30px;">
-                <div class="kpi-label" style="margin-bottom: 20px;">Curva de Crescimento (Patrimônio Total)</div>
+                <div class="kpi-label" style="margin-bottom: 20px;">Curva de Crescimento</div>
                 <div class="chart-container" style="height: 400px;">
                     <canvas id="evolutionChart"></canvas>
                 </div>
             </div>
 
-            <!-- Tabela Detalhada (NOVO PEDIDO) -->
             <div class="card">
-                <div class="kpi-label">Detalhamento Numérico da Evolução</div>
+                <div class="kpi-label">Detalhamento Numérico</div>
                 <div class="table-container">
                     <table id="evolutionTable">
                         <thead>
                             <tr>
-                                <th>Data (Mês/Ano)</th>
-                                <th>Valor Patrimonial Projetado</th>
-                                <th>Crescimento Estimado</th>
+                                <th>Data</th>
+                                <th>Patrimônio Projetado</th>
+                                <th>Crescimento</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Preenchido via JS -->
-                        </tbody>
+                        <tbody></tbody>
                     </table>
+                </div>
+                <!-- Controles de Paginação -->
+                <div class="pagination-controls" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                    <button class="btn-icon" onclick="changePage(-1)">◀</button>
+                    <span id="pageIndicator" style="align-self: center; color: var(--text-secondary);">Página 1</span>
+                    <button class="btn-icon" onclick="changePage(1)">▶</button>
                 </div>
             </div>
         </section>
 
-
-        <!-- PÁGINA: CARTEIRA DE GIRO (APORTES) -->
-        <section id="carteira_giro" class="page-section">
+        <!-- NOVO: COMPARATIVO (META vs REAL) -->
+        <section id="comparativo" class="page-section">
             <div class="page-header">
                 <div class="page-title">
-                    <h2>Carteira de Giro (Aportes)</h2>
-                    <p>Caixa operacional para novos investimentos. O dinheiro sai daqui para Aportes.</p>
+                    <h2>Planejado vs Realizado</h2>
+                    <p>Compare suas metas anuais com o que foi efetivamente aportado.</p>
                 </div>
             </div>
 
+            <div class="kpi-grid">
+                <div class="card">
+                    <div class="kpi-label">Meta Anual (Total)</div>
+                    <div class="kpi-value" id="compTotalPlanned">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="kpi-label">Realizado Anual</div>
+                    <div class="kpi-value text-green" id="compTotalRealized">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="kpi-label">Atingimento da Meta</div>
+                    <div class="kpi-value text-blue" id="compPercentage">0%</div>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="card" style="flex: 2;">
+                    <div class="kpi-label" style="margin-bottom: 20px;">Comparativo Mensal (Barras)</div>
+                    <div class="chart-container">
+                        <canvas id="compBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CARTEIRAS (Giro e Pessoal) -->
+        <section id="carteira_giro" class="page-section">
+            <div class="page-header"><h2>Carteira de Giro</h2></div>
             <div class="kpi-grid">
                 <div class="card" style="border-left: 4px solid var(--accent-blue);">
-                    <div class="kpi-label">Disponível para Investir</div>
+                    <div class="kpi-label">Disponível</div>
                     <div class="kpi-value text-blue" id="balanceReinvest">R$ 0,00</div>
                 </div>
-                <div class="card" style="display: flex; gap: 15px; align-items: center; justify-content: center;">
-                    <button class="btn btn-primary" onclick="handleTransaction('deposit', 'reinvest')">Adicionar Fundo</button>
-                    <!-- O saque desta carteira geralmente é para a carteira pessoal, mas deixei genérico -->
-                    <button class="btn btn-danger" onclick="handleTransaction('withdraw', 'reinvest')">Retirar Fundo</button>
+                <div class="card" style="display: flex; gap: 15px; justify-content: center;">
+                    <button class="btn btn-primary" onclick="handleTransaction('deposit', 'reinvest')">Adicionar</button>
+                    <button class="btn btn-danger" onclick="handleTransaction('withdraw', 'reinvest')">Retirar</button>
                 </div>
             </div>
-
             <div class="card">
-                <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Extrato de Giro</h3>
                 <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Tipo</th>
-                                <th>Descrição</th>
-                                <th>Valor</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBodyReinvest"></tbody>
-                    </table>
+                    <table><thead><tr><th>Data</th><th>Tipo</th><th>Desc</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="tableBodyReinvest"></tbody></table>
                 </div>
             </div>
         </section>
 
-        <!-- PÁGINA: CARTEIRA PESSOAL (RESGATES) -->
         <section id="carteira_pessoal" class="page-section">
-            <div class="page-header">
-                <div class="page-title">
-                    <h2>Carteira Pessoal (Resgates)</h2>
-                    <p>Valores retirados do sistema para uso pessoal. O dinheiro vem pra cá nos resgates definitivos.</p>
-                </div>
-            </div>
-
+            <div class="page-header"><h2>Carteira Pessoal</h2></div>
             <div class="kpi-grid">
                 <div class="card" style="border-left: 4px solid var(--accent-yellow);">
-                    <div class="kpi-label">Saldo Acumulado (Bolso)</div>
+                    <div class="kpi-label">Saldo Pessoal</div>
                     <div class="kpi-value text-yellow" id="balancePersonal">R$ 0,00</div>
                 </div>
-                <div class="card" style="display: flex; gap: 15px; align-items: center; justify-content: center;">
-                    <button class="btn btn-danger" onclick="handleTransaction('withdraw', 'personal')">Gastar (Baixar)</button>
+                <div class="card" style="display: flex; justify-content: center;">
+                    <button class="btn btn-danger" onclick="handleTransaction('withdraw', 'personal')">Gastar</button>
                 </div>
             </div>
-
             <div class="card">
-                <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Extrato Pessoal</h3>
                 <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Tipo</th>
-                                <th>Descrição</th>
-                                <th>Valor</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBodyPersonal"></tbody>
-                    </table>
+                    <table><thead><tr><th>Data</th><th>Tipo</th><th>Desc</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="tableBodyPersonal"></tbody></table>
                 </div>
             </div>
         </section>
 
-
-        <!-- PÁGINA 3: NOVOS APORTES (CONTROLE DE TAXAS) -->
+        <!-- APORTES -->
         <section id="aportes" class="page-section">
             <div class="page-header">
-                <div class="page-title">
-                    <h2>Registrar Novo Aporte</h2>
-                    <p>O valor deste aporte será debitado da <strong>Carteira de Giro</strong>.</p>
-                </div>
+                <h2>Registrar Novo Aporte</h2>
+                <p>O valor será debitado da <strong>Carteira de Giro</strong>.</p>
             </div>
-
             <div class="card">
                 <form id="investForm">
                     <div class="form-grid">
-                        
-                        <!-- Coluna 1: Identificação -->
                         <div>
                             <h4 style="margin-bottom: 15px; color: var(--accent-blue);">Dados do Ativo</h4>
-                            <div class="form-group">
-                                <label>Nome do Ativo</label>
-                                <input type="text" id="inpName" class="form-control" placeholder="Ex: CDB Banco X 120% CDI" required>
+                            <div class="form-group"><label>Nome</label><input type="text" id="inpName" class="form-control" required></div>
+                            <div class="form-group"><label>Instituição</label>
+                                <select id="inpInst" class="form-control"><option>XP Investimentos</option><option>BTG Pactual</option><option>NuInvest</option><option>Banco Inter</option></select>
                             </div>
-                            <div class="form-group">
-                                <label>Instituição</label>
-                                <select id="inpInst" class="form-control">
-                                    <option>XP Investimentos</option>
-                                    <option>BTG Pactual</option>
-                                    <option>NuInvest</option>
-                                    <option>Banco Inter</option>
-                                    <option>Outra</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Tipo</label>
-                                <select id="inpType" class="form-control">
-                                    <option>Renda Fixa</option>
-                                    <option>Ações</option>
-                                    <option>FIIs</option>
-                                    <option>Cripto</option>
-                                </select>
+                            <div class="form-group"><label>Tipo</label>
+                                <select id="inpType" class="form-control"><option>Renda Fixa</option><option>Ações</option><option>FIIs</option><option>Cripto</option></select>
                             </div>
                             <div class="form-grid" style="gap: 10px;">
-                                <div class="form-group">
-                                    <label>Data Aporte</label>
-                                    <input type="date" id="inpDate" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Vencimento</label>
-                                    <input type="date" id="inpExpiry" class="form-control">
-                                </div>
+                                <div class="form-group"><label>Data</label><input type="date" id="inpDate" class="form-control" required></div>
+                                <div class="form-group"><label>Vencimento</label><input type="date" id="inpExpiry" class="form-control"></div>
                             </div>
-                            <div class="form-group">
-                                <label>Valor do Aporte (R$)</label>
-                                <input type="number" id="inpValue" class="form-control" placeholder="0.00" step="0.01" required>
-                                <small style="color: var(--accent-blue); margin-top: 5px;">Será descontado da Carteira de Giro.</small>
-                            </div>
+                            <div class="form-group"><label>Valor (R$)</label><input type="number" id="inpValue" class="form-control" step="0.01" required></div>
                         </div>
-
-                        <!-- Coluna 2: Controle de Taxas -->
                         <div>
-                            <h4 style="margin-bottom: 15px; color: var(--accent-green);">Controle de Taxas & Retorno</h4>
-                            
+                            <h4 style="margin-bottom: 15px; color: var(--accent-green);">Taxas</h4>
                             <div class="rate-control-box">
-                                <div class="form-group">
-                                    <label style="color: var(--accent-blue);">Taxa CONTRATADA (Prevista)</label>
-                                    <div style="display: flex; gap: 10px;">
-                                        <input type="number" id="inpRatePrev" class="form-control" placeholder="Taxa" step="0.01">
-                                        <select id="inpRateTypePrev" class="form-control" style="width: 120px;">
-                                            <option>% CDI</option>
-                                            <option>% a.a.</option>
-                                            <option>IPCA +</option>
-                                        </select>
-                                    </div>
-                                    <small style="color: #666; display: block; margin-top: 5px;">Use a taxa exata do momento da compra.</small>
+                                <div class="form-group"><label>Taxa Prevista</label>
+                                    <div style="display:flex; gap:10px;"><input type="number" id="inpRatePrev" class="form-control"><select id="inpRateTypePrev" class="form-control"><option>% CDI</option><option>% a.a.</option><option>IPCA +</option></select></div>
                                 </div>
-
-                                <div class="form-group" style="margin-top: 20px;">
-                                    <label style="color: var(--accent-green);">Taxa REAL (Atual/Final)</label>
-                                    <div style="display: flex; gap: 10px;">
-                                        <input type="number" id="inpRateReal" class="form-control" placeholder="Taxa Efetiva" step="0.01">
-                                        <select id="inpRateTypeReal" class="form-control" style="width: 120px;">
-                                            <option>% CDI</option>
-                                            <option>% a.a.</option>
-                                            <option>IPCA +</option> <!-- CORREÇÃO FEITA AQUI -->
-                                        </select>
-                                    </div>
-                                    <small style="color: #666; display: block; margin-top: 5px;">Preencha no vencimento para comparar.</small>
-                                </div>
-                            </div>
-
-                            <div class="form-group" style="margin-top: 20px;">
-                                <label>Status</label>
-                                <select id="inpStatus" class="form-control">
-                                    <option>Ativo</option>
-                                    <option>Finalizado</option>
-                                </select>
+                                <div class="form-group" style="margin-top:20px;"><label>Status</label><select id="inpStatus" class="form-control"><option>Ativo</option><option>Finalizado</option></select></div>
+                                <!-- Taxa Real omitida para simplificar visualização, pode manter se quiser -->
+                                <input type="hidden" id="inpRateReal"> <input type="hidden" id="inpRateTypeReal">
                             </div>
                         </div>
                     </div>
-
-                    <div style="margin-top: 20px; text-align: right;">
-                        <button class="btn btn-primary" type="submit" style="width: 200px;">Registrar Aporte</button>
-                    </div>
+                    <div style="margin-top: 20px; text-align: right;"><button class="btn btn-primary" type="submit">Registrar</button></div>
                 </form>
             </div>
         </section>
 
-        <!-- PÁGINA 4: HISTÓRICO -->
-        <section id="historico" class="page-section">
+        <!-- NOVO: PLANEJAMENTO (INPUT) -->
+        <section id="planejamento" class="page-section">
             <div class="page-header">
-                <h2>Histórico Completo</h2>
-                <button class="btn btn-danger" onclick="clearAllData()" style="font-size: 0.8rem; padding: 8px 16px;">Limpar Tudo</button>
+                <h2>Definir Metas de Aporte</h2>
+                <p>Estipule quanto você quer investir em cada mês para comparar depois.</p>
             </div>
             <div class="card">
+                <form id="planForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Mês de Referência</label>
+                            <input type="month" id="inpPlanMonth" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Meta (R$)</label>
+                            <input type="number" id="inpPlanValue" class="form-control" placeholder="Ex: 5000.00" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoria (Opcional)</label>
+                            <select id="inpPlanCategory" class="form-control">
+                                <option value="Geral">Geral (Total)</option>
+                                <option value="Renda Fixa">Renda Fixa</option>
+                                <option value="Renda Variável">Renda Variável</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Salvar Meta</button>
+                </form>
+            </div>
+            
+            <div class="card" style="margin-top: 30px;">
+                <h3>Metas Definidas</h3>
                 <div class="table-container">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Ativo</th>
-                                <th>Data Aporte</th>
-                                <th>Vencimento</th>
-                                <th>Valor Atual (R$)</th>
-                                <th>Taxa Prev.</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="investTableBody">
-                            <!-- JS preencherá aqui -->
-                        </tbody>
+                        <thead><tr><th>Mês/Ano</th><th>Categoria</th><th>Valor Meta</th><th>Ação</th></tr></thead>
+                        <tbody id="plansTableBody"></tbody>
                     </table>
                 </div>
             </div>
         </section>
 
-        <!-- PÁGINA 5: CONFIGURAÇÕES (LÓGICA) -->
-        <section id="config" class="page-section">
-            <div class="page-header">
-                <div class="page-title">
-                    <h2>Lógica de Cálculo e Configurações</h2>
-                    <p>Documentação técnica das fórmulas utilizadas no sistema.</p>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 style="margin-bottom: 15px;">1. Cálculo da Evolução Patrimonial</h3>
-                <p style="margin-bottom: 10px; color: #aaa;">O gráfico e a tabela de evolução utilizam a fórmula de Juros Compostos para projetar o valor futuro. A lógica verifica a data de cada investimento e calcula quantos meses se passaram até a data do ponto no gráfico.</p>
-                
-                <div class="code-block">
-                    <span class="code-comment">// Fórmula de Juros Compostos: M = C * (1 + i)^t</span><br>
-                    <span class="code-comment">// i (taxa mensal) é derivada da taxa anual cadastrada</span><br><br>
-                    <span class="code-keyword">const</span> rateMonthly = <span class="code-value">Math.pow(1 + rateYearly, 1/12) - 1</span>;<br>
-                    <span class="code-keyword">const</span> projectedVal = <span class="code-value">inv.value * Math.pow(1 + rateMonthly, diffMonths)</span>;
-                </div>
-
-                <h3 style="margin-bottom: 15px;">2. Premissas de Taxas (Conversão)</h3>
-                <p style="margin-bottom: 10px; color: #aaa;">Para facilitar a projeção, o sistema converte as taxas cadastradas em taxas anuais efetivas aproximadas, usando as seguintes constantes quando necessário:</p>
-
-                <div class="code-block">
-                    <span class="code-comment">// Se Taxa for "% CDI": Assume-se CDI atual de 11% a.a.</span><br>
-                    rateYearly = <span class="code-value">(rateVal / 100) * 0.11</span>;<br><br>
-                    <span class="code-comment">// Se Taxa for "IPCA +": Assume-se IPCA base de 5% a.a. + Taxa</span><br>
-                    rateYearly = <span class="code-value">0.05 + (rateVal / 100)</span>;<br><br>
-                    <span class="code-comment">// Se Taxa for "% a.a.": Usa o valor direto</span><br>
-                    rateYearly = <span class="code-value">rateVal / 100</span>;
-                </div>
-
-                <h3 style="margin-bottom: 15px;">3. Fluxo de Carteiras</h3>
-                <ul style="color: #aaa; margin-left: 20px; line-height: 1.6;">
-                    <li><strong>Novo Aporte:</strong> O valor é subtraído da <em>Carteira de Giro</em>.</li>
-                    <li><strong>Resgate (Opção Giro):</strong> O valor do investimento volta para a <em>Carteira de Giro</em> (pronto para reinvestir).</li>
-                    <li><strong>Resgate (Opção Pessoal):</strong> O valor vai para a <em>Carteira Pessoal</em> (considerado saque do sistema).</li>
-                </ul>
-            </div>
+        <!-- HISTÓRICO -->
+        <section id="historico" class="page-section">
+            <div class="page-header"><h2>Histórico</h2><button class="btn btn-danger" onclick="clearAllData()">Limpar Tudo</button></div>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Ativo</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="investTableBody"></tbody></table></div></div>
         </section>
+
+        <section id="config" class="page-section"><div class="page-header"><h2>Configurações</h2></div><div class="card"><p>Configurações do sistema.</p></div></section>
 
     </main>
 
-    <!-- Link para o JavaScript Externo -->
     <script src="script.js"></script>
 </body>
 </html>
